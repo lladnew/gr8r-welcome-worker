@@ -1,0 +1,11 @@
+name = "gr8r-welcome-worker"
+main = "index.js"
+compatibility_date = "2025-06-09"
+
+[vars]
+AIRTABLE_API_KEY = ""
+AIRTABLE_BASE_ID = ""
+MAILERSEND_API_KEY = ""
+
+[[triggers]]
+cron = "0 13 * * *"  # 9am ET daily
