@@ -1,5 +1,11 @@
 // Gr8terThings - Cloudflare Worker: Send Welcome Email via MailerSend
 // Triggered daily via cron
+//
+// Changelog:
+// - Added logging for fetch, send, and update steps
+// - Logged raw Airtable value of "First Name" for clarity
+// - Corrected field name to "Welcome Email Sent?" (was missing `?`)
+// - Added subscriber.email as a template variable
 
 export default {
   async fetch(request, env, ctx) {
@@ -23,14 +29,19 @@ export default {
     });
 
     if (!airtableRes.ok) {
-      console.error("Failed to fetch from Airtable", await airtableRes.text());
+      console.error("❌ Failed to fetch from Airtable", await airtableRes.text());
       return;
     }
 
     const { records } = await airtableRes.json();
+    console.log(`✅ Fetched ${records.length} subscriber(s) from Airtable.`);
+
     for (const record of records) {
       const email = record.fields["Email"];
-      const firstName = record.fields["First Name"] || "there";
+      const rawFirstName = record.fields["First Name"];
+      const firstName = rawFirstName || "there";
+
+      console.log(`📨 Preparing email for: "${rawFirstName}" <${email}>`);
 
       const emailRes = await fetch("https://api.mailersend.com/v1/email", {
         method: "POST",
@@ -52,6 +63,10 @@ export default {
                 {
                   var: "subscriber.first_name",
                   value: firstName
+                },
+                {
+                  var: "subscriber.email",
+                  value: email
                 }
               ]
             }
@@ -60,12 +75,14 @@ export default {
       });
 
       if (!emailRes.ok) {
-        console.error(`Failed to send email to ${email}`, await emailRes.text());
+        console.error(`❌ Failed to send email to ${email}:`, await emailRes.text());
         continue;
       }
 
+      console.log(`✅ Email sent to ${email}`);
+
       const updateUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TABLE_ID}/${record.id}`;
-      await fetch(updateUrl, {
+      const patchRes = await fetch(updateUrl, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${AIRTABLE_API_KEY}`,
@@ -73,10 +90,16 @@ export default {
         },
         body: JSON.stringify({
           fields: {
-            "Welcome Email Sent": true
+            "Welcome Email Sent?": true
           }
         })
       });
+
+      if (!patchRes.ok) {
+        console.error(`⚠️ Failed to update Airtable for ${email}:`, await patchRes.text());
+      } else {
+        console.log(`📒 Airtable updated for ${email}`);
+      }
     }
   },
 };
