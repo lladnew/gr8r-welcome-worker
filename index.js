@@ -1,12 +1,9 @@
-// v1.0.2 Gr8terThings - Cloudflare Worker: Send Welcome Email via MailerSend
+// v1.0.3 Gr8terThings - Cloudflare Worker: Send Welcome Email via MailerSend
 // Triggered daily via cron
 //
 // Changelog:
-// - Added logging for fetch, send, and update steps
-// - Logged raw Airtable value of "First Name" for clarity
-// - Corrected field name to "Welcome Email Sent?" (was missing `?`)
-// - Added subscriber.email as a template variable
-// - Logged full MailerSend API payload for debugging merge issues
+// - Nested MailerSend variables properly using subscriber object
+// - Ensures {{ subscriber.first_name }} and {{ subscriber.email }} work in the MailerSend template
 
 export default {
   async fetch(request, env, ctx) {
@@ -56,12 +53,11 @@ export default {
             email,
             substitutions: [
               {
-                var: "subscriber.first_name",
-                value: firstName
-              },
-              {
-                var: "subscriber.email",
-                value: email
+                var: "subscriber",
+                value: {
+                  first_name: firstName,
+                  email: email
+                }
               }
             ]
           }
@@ -108,4 +104,3 @@ export default {
     }
   },
 };
-
