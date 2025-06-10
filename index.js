@@ -1,4 +1,4 @@
-// Gr8terThings - Cloudflare Worker: Send Welcome Email via MailerSend
+// v1.0.2 Gr8terThings - Cloudflare Worker: Send Welcome Email via MailerSend
 // Triggered daily via cron
 //
 // Changelog:
@@ -6,6 +6,7 @@
 // - Logged raw Airtable value of "First Name" for clarity
 // - Corrected field name to "Welcome Email Sent?" (was missing `?`)
 // - Added subscriber.email as a template variable
+// - Logged full MailerSend API payload for debugging merge issues
 
 export default {
   async fetch(request, env, ctx) {
@@ -43,35 +44,39 @@ export default {
 
       console.log(`📨 Preparing email for: "${rawFirstName}" <${email}>`);
 
+      const payload = {
+        template_id: TEMPLATE_ID,
+        from: {
+          email: "chad.mowery@gr8terthings.com",
+          name: "Chad from GR8R"
+        },
+        to: [{ email, name: firstName }],
+        variables: [
+          {
+            email,
+            substitutions: [
+              {
+                var: "subscriber.first_name",
+                value: firstName
+              },
+              {
+                var: "subscriber.email",
+                value: email
+              }
+            ]
+          }
+        ]
+      };
+
+      console.log("📦 MailerSend payload:", JSON.stringify(payload, null, 2));
+
       const emailRes = await fetch("https://api.mailersend.com/v1/email", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${MAILERSEND_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          template_id: TEMPLATE_ID,
-          from: {
-            email: "chad.mowery@gr8terthings.com",
-            name: "Chad from GR8R"
-          },
-          to: [{ email, name: firstName }],
-          variables: [
-            {
-              email,
-              substitutions: [
-                {
-                  var: "subscriber.first_name",
-                  value: firstName
-                },
-                {
-                  var: "subscriber.email",
-                  value: email
-                }
-              ]
-            }
-          ]
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!emailRes.ok) {
@@ -103,3 +108,4 @@ export default {
     }
   },
 };
+
