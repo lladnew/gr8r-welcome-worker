@@ -1,9 +1,9 @@
-// v1.0.3 Gr8terThings - Cloudflare Worker: Send Welcome Email via MailerSend
+// v1.0.4 Gr8terThings - Cloudflare Worker: Send Welcome Email via MailerSend
 // Triggered daily via cron
 //
 // Changelog:
-// - Nested MailerSend variables properly using subscriber object
-// - Ensures {{ subscriber.first_name }} and {{ subscriber.email }} work in the MailerSend template
+// - Switched from nested substitution vars (e.g., `subscriber.first_name`) to flat vars (`first_name`, `email`)
+// - Template must now use {{ first_name }} instead of {{ subscriber.first_name }}
 
 export default {
   async fetch(request, env, ctx) {
@@ -53,11 +53,12 @@ export default {
             email,
             substitutions: [
               {
-                var: "subscriber",
-                value: {
-                  first_name: firstName,
-                  email: email
-                }
+                var: "first_name",
+                value: firstName
+              },
+              {
+                var: "email",
+                value: email
               }
             ]
           }
