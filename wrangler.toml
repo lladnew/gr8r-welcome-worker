@@ -1,0 +1,7 @@
+name = "gr8r-welcome-worker"
+main = "index.js"
+compatibility_date = "2025-06-09"
+
+[[routes]]
+pattern = "api.gr8r.com/api/welcome*"
+zone_name = "gr8r.com"
